@@ -93,6 +93,9 @@ window.FilmDetailDialog = {
         :model="film"
         label-width="80px"
       >
+        <el-form-item label="编号">
+          <el-input v-model="film.code" :disabled="!editMode" />
+        </el-form-item>
         <el-form-item label="名称">
           <el-input v-model="film.name" :disabled="!editMode" />
         </el-form-item>
@@ -147,6 +150,7 @@ window.FilmPage = {
     const films = Vue.ref([])
     const loading = Vue.ref(false)
     const searchName = Vue.ref("")
+    const searchCode = Vue.ref("")
     const searchActor = Vue.ref("")
     const filterTag = Vue.ref("")
     const sortBy = Vue.ref("recent")
@@ -155,6 +159,7 @@ window.FilmPage = {
     const editMode = Vue.ref(false)
     const currentFilm = Vue.reactive({
       id: null,
+      code: "",
       name: "",
       year: null,
       tags: "",
@@ -168,6 +173,7 @@ window.FilmPage = {
 
     const createVisible = Vue.ref(false)
     const createForm = Vue.reactive({
+      code: "",
       name: "",
       year: null,
       tags: "",
@@ -200,6 +206,9 @@ window.FilmPage = {
         const params = new URLSearchParams()
         if (searchName.value) {
           params.append("q", searchName.value)
+        }
+        if (searchCode.value) {
+          params.append("code", searchCode.value)
         }
         if (searchActor.value) {
           params.append("actor", searchActor.value)
@@ -331,6 +340,7 @@ window.FilmPage = {
       films,
       loading,
       searchName,
+      searchCode,
       searchActor,
       filterTag,
       sortBy,
@@ -356,6 +366,12 @@ window.FilmPage = {
         <el-input
           v-model="searchName"
           placeholder="按名称搜索"
+          clearable
+          @change="loadFilms"
+        />
+        <el-input
+          v-model="searchCode"
+          placeholder="按编号搜索"
           clearable
           @change="loadFilms"
         />
@@ -437,6 +453,9 @@ window.FilmPage = {
           :model="createForm"
           label-width="80px"
         >
+          <el-form-item label="编号">
+            <el-input v-model="createForm.code" />
+          </el-form-item>
           <el-form-item label="名称" required>
             <el-input v-model="createForm.name" />
           </el-form-item>

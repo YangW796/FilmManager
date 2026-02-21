@@ -15,14 +15,15 @@ def row_to_film(row: sqlite3.Row) -> Film:
     return Film(
         id=row[0],
         name=row[1],
-        year=row[2],
-        tags=row[3],
-        series=row[4],
-        actors=row[5],
-        description=row[6],
-        poster_path=row[7],
-        file_path=row[8],
-        rating=row[9],
+        code=row[2],
+        year=row[3],
+        tags=row[4],
+        series=row[5],
+        actors=row[6],
+        description=row[7],
+        poster_path=row[8],
+        file_path=row[9],
+        rating=row[10],
     )
 
 
@@ -57,6 +58,7 @@ def ensure_actors_exist(connection: sqlite3.Connection, actors_text: str) -> Non
 @router.get("/api/films", response_model=List[Film])
 def list_films(
     q: Optional[str] = Query(default=None, description="按名称模糊搜索"),
+    code: Optional[str] = Query(default=None, description="按编号模糊搜索"),
     actor: Optional[str] = Query(default=None, description="按演员模糊搜索"),
     tag: Optional[str] = Query(default=None, description="按标签模糊搜索"),
     series: Optional[str] = Query(default=None, description="按系列精确筛选"),
@@ -65,13 +67,16 @@ def list_films(
     connection = get_connection()
     connection.row_factory = sqlite3.Row
     try:
-        sql = "SELECT id, name, year, tags, series, actors, description, poster_path, file_path, rating FROM films"
+        sql = "SELECT id, name, code, year, tags, series, actors, description, poster_path, file_path, rating FROM films"
         conditions = []
         params: List[object] = []
 
         if q:
             conditions.append("name LIKE ?")
             params.append(f"%{q}%")
+        if code:
+            conditions.append("code LIKE ?")
+            params.append(f"%{code}%")
         if actor:
             conditions.append("actors LIKE ?")
             params.append(f"%{actor}%")
@@ -103,7 +108,7 @@ def get_film(film_id: int) -> Film:
     connection.row_factory = sqlite3.Row
     try:
         cursor = connection.execute(
-            "SELECT id, name, year, tags, series, actors, description, poster_path, file_path, rating FROM films WHERE id = ?",
+            "SELECT id, name, code, year, tags, series, actors, description, poster_path, file_path, rating FROM films WHERE id = ?",
             (film_id,),
         )
         row = cursor.fetchone()
@@ -120,11 +125,12 @@ def create_film(film: FilmCreate) -> Film:
     try:
         cursor = connection.execute(
             """
-            INSERT INTO films (name, year, tags, series, actors, description, poster_path, file_path, rating)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO films (name, code, year, tags, series, actors, description, poster_path, file_path, rating)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 film.name,
+                film.code,
                 film.year,
                 film.tags,
                 film.series,

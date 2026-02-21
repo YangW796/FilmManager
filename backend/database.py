@@ -16,6 +16,7 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS films (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
+                code TEXT,
                 year INTEGER,
                 tags TEXT,
                 series TEXT,
@@ -28,6 +29,12 @@ def init_db() -> None:
             )
             """
         )
+        try:
+            connection.execute(
+                "ALTER TABLE films ADD COLUMN code TEXT"
+            )
+        except sqlite3.OperationalError:
+            pass
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS actors (
@@ -46,4 +53,3 @@ def init_db() -> None:
 
 def get_connection() -> sqlite3.Connection:
     return sqlite3.connect(DB_PATH)
-

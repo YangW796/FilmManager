@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class FilmBase(BaseModel):
     name: str
+    code: Optional[str] = None
     year: Optional[int] = None
     tags: Optional[str] = None
     series: Optional[str] = None
@@ -21,6 +22,7 @@ class FilmCreate(FilmBase):
 
 class FilmUpdate(BaseModel):
     name: Optional[str] = None
+    code: Optional[str] = None
     year: Optional[int] = None
     tags: Optional[str] = None
     series: Optional[str] = None
@@ -59,4 +61,3 @@ class Actor(ActorBase):
 
     class Config:
         orm_mode = True
-
