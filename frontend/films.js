@@ -392,6 +392,8 @@ window.FilmPage = {
   setup() {
     const films = Vue.ref([])
     const loading = Vue.ref(false)
+    const currentPage = Vue.ref(1)
+    const pageSize = Vue.ref(12)
     const searchName = Vue.ref("")
     const searchCode = Vue.ref("")
     const searchActor = Vue.ref("")
@@ -456,6 +458,12 @@ window.FilmPage = {
         }
       })
       return Array.from(set)
+    })
+
+    const pagedFilms = Vue.computed(() => {
+      const start = (currentPage.value - 1) * pageSize.value
+      const end = start + pageSize.value
+      return films.value.slice(start, end)
     })
 
     const createTagDialogVisible = Vue.ref(false)
@@ -543,6 +551,7 @@ window.FilmPage = {
           throw new Error("加载失败")
         }
         films.value = await res.json()
+        currentPage.value = 1
       } catch (e) {
         console.error(e)
         ElementPlus.ElMessage.error("加载影视列表失败")
@@ -699,6 +708,8 @@ window.FilmPage = {
     return {
       films,
       loading,
+      currentPage,
+      pageSize,
       searchName,
       searchCode,
       searchActor,
@@ -720,6 +731,7 @@ window.FilmPage = {
       createSelectedTags,
       createFilteredTags,
       tagOptions,
+      pagedFilms,
       loadFilms,
       openDetail,
       enableEdit,
@@ -738,30 +750,37 @@ window.FilmPage = {
   },
   template: `
     <div>
-      <div class="toolbar" style="margin-bottom: 16px">
+      <div
+        class="toolbar"
+        style="margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;"
+      >
         <el-input
           v-model="searchName"
           placeholder="按名称搜索"
           clearable
           @change="loadFilms"
+          style="width: 180px"
         />
         <el-input
           v-model="searchCode"
           placeholder="按编号搜索"
           clearable
           @change="loadFilms"
+          style="width: 160px"
         />
         <el-input
           v-model="searchActor"
           placeholder="按演员搜索"
           clearable
           @change="loadFilms"
+          style="width: 180px"
         />
         <el-select
           v-model="filterTag"
           placeholder="标签筛选"
           clearable
           @change="loadFilms"
+          style="width: 160px"
         >
           <el-option
             v-for="tag in tagOptions"
@@ -774,6 +793,7 @@ window.FilmPage = {
           v-model="sortBy"
           placeholder="排序"
           @change="loadFilms"
+          style="width: 140px"
         >
           <el-option label="最近添加" value="recent" />
           <el-option label="年份" value="year" />
@@ -781,9 +801,21 @@ window.FilmPage = {
         <el-button type="primary" @click="openCreate">添加影视</el-button>
       </div>
 
+      <div
+        v-if="films.length > pageSize"
+        style="margin-bottom: 12px; display: flex; justify-content: center;"
+      >
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          layout="prev, pager, next, jumper"
+          :total="films.length"
+        />
+      </div>
+
       <el-row :gutter="16">
         <el-col
-          v-for="film in films"
+          v-for="film in pagedFilms"
           :key="film.id"
           :xs="12"
           :sm="8"
