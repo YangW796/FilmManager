@@ -1,7 +1,7 @@
 from typing import List
 import sqlite3
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from .database import get_connection
 from .schemas import Series
@@ -41,5 +41,29 @@ def list_series() -> List[Series]:
         )
         rows = cursor.fetchall()
         return [row_to_series(row) for row in rows]
+    finally:
+        connection.close()
+
+
+@router.delete("/api/series/{series_id}")
+def delete_series(series_id: int) -> None:
+    connection = get_connection()
+    try:
+        cursor = connection.execute(
+            "SELECT 1 FROM series WHERE id = ?",
+            (series_id,),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="系列不存在")
+        connection.execute(
+            "UPDATE films SET series_id = NULL WHERE series_id = ?",
+            (series_id,),
+        )
+        connection.execute(
+            "DELETE FROM series WHERE id = ?",
+            (series_id,),
+        )
+        connection.commit()
     finally:
         connection.close()

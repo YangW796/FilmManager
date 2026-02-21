@@ -101,7 +101,11 @@ window.FilmDetailDialog = {
 
     const confirmSeries = () => {
       const value = seriesSearch.value.trim()
-      props.film.series = value || null
+      const finalValue = value || null
+      props.film.series = finalValue
+      if (value && !seriesOptions.value.includes(value)) {
+        seriesOptions.value.push(value)
+      }
       seriesDialogVisible.value = false
     }
 
@@ -648,7 +652,11 @@ window.FilmPage = {
 
     const confirmCreateSeries = () => {
       const value = createSeriesSearch.value.trim()
-      createForm.series = value || ""
+      const finalValue = value || ""
+      createForm.series = finalValue
+      if (value && !createSeriesOptions.value.includes(value)) {
+        createSeriesOptions.value.push(value)
+      }
       createSeriesDialogVisible.value = false
     }
 

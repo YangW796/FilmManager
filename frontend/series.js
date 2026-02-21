@@ -52,6 +52,38 @@ window.SeriesPage = {
       await loadSeriesFilms(series.name)
     }
 
+    const deleteSeries = async () => {
+      if (!selectedSeries.value) {
+        return
+      }
+      try {
+        await ElementPlus.ElMessageBox.confirm("确定要删除该系列吗？相关影片将不再属于该系列。", "提示", {
+          type: "warning"
+        })
+      } catch {
+        return
+      }
+      const target = seriesList.value.find(item => item.name === selectedSeries.value)
+      if (!target) {
+        ElementPlus.ElMessage.error("未找到该系列")
+        return
+      }
+      try {
+        const res = await fetch("/api/series/" + target.id, {
+          method: "DELETE"
+        })
+        if (!res.ok) {
+          throw new Error("删除失败")
+        }
+        ElementPlus.ElMessage.success("系列已删除")
+        await loadSeries()
+        backToList()
+      } catch (e) {
+        console.error(e)
+        ElementPlus.ElMessage.error("删除系列失败")
+      }
+    }
+
     const backToList = () => {
       view.value = "list"
       selectedSeries.value = ""
@@ -106,7 +138,8 @@ window.SeriesPage = {
       currentFilm,
       openFilmDetail,
       handleFilmSaved,
-      handleFilmDeleted
+      handleFilmDeleted,
+      deleteSeries
     }
   },
   template: `
@@ -147,6 +180,7 @@ window.SeriesPage = {
       <div v-else-if="view === 'detail'">
         <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 16px;">
           <el-button @click="backToList">返回系列列表</el-button>
+          <el-button type="danger" @click="deleteSeries">删除当前系列</el-button>
           <div v-if="selectedSeries">
             <div class="film-title">{{ selectedSeries }}</div>
           </div>
