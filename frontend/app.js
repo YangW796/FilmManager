@@ -4,7 +4,8 @@ const App = {
   name: "RootApp",
   components: {
     FilmPage: window.FilmPage,
-    ActorPage: window.ActorPage
+    ActorPage: window.ActorPage,
+    SeriesPage: window.SeriesPage
   },
   setup() {
     const currentPage = ref("films")
@@ -28,11 +29,13 @@ const App = {
         >
           <el-menu-item index="films">影片</el-menu-item>
           <el-menu-item index="actors">演员</el-menu-item>
+          <el-menu-item index="series">系列</el-menu-item>
         </el-menu>
       </div>
       <div style="padding-top: 56px;">
         <FilmPage v-if="currentPage === 'films'" />
         <ActorPage v-else-if="currentPage === 'actors'" />
+        <SeriesPage v-else-if="currentPage === 'series'" />
       </div>
     </div>
   `

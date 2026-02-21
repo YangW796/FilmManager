@@ -26,11 +26,40 @@ def row_to_film(row: sqlite3.Row) -> Film:
     )
 
 
+def ensure_actors_exist(connection: sqlite3.Connection, actors_text: str) -> None:
+    parts = re.split(r"[;,]", actors_text)
+    names = []
+    for part in parts:
+        name = part.strip()
+        if name:
+            names.append(name)
+    seen = set()
+    unique_names = []
+    for name in names:
+        if name not in seen:
+            seen.add(name)
+            unique_names.append(name)
+    for name in unique_names:
+        exists_cursor = connection.execute(
+            "SELECT 1 FROM actors WHERE name = ? LIMIT 1",
+            (name,),
+        )
+        if exists_cursor.fetchone() is None:
+            connection.execute(
+                """
+                INSERT INTO actors (name, other_names, avatar_path)
+                VALUES (?, ?, ?)
+                """,
+                (name, None, None),
+            )
+
+
 @router.get("/api/films", response_model=List[Film])
 def list_films(
     q: Optional[str] = Query(default=None, description="按名称模糊搜索"),
     actor: Optional[str] = Query(default=None, description="按演员模糊搜索"),
     tag: Optional[str] = Query(default=None, description="按标签模糊搜索"),
+    series: Optional[str] = Query(default=None, description="按系列精确筛选"),
     sort_by: str = Query(default="recent", description="排序方式: recent 或 year"),
 ) -> List[Film]:
     connection = get_connection()
@@ -49,6 +78,9 @@ def list_films(
         if tag:
             conditions.append("tags LIKE ?")
             params.append(f"%{tag}%")
+        if series:
+            conditions.append("series = ?")
+            params.append(series)
 
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
@@ -105,31 +137,7 @@ def create_film(film: FilmCreate) -> Film:
         )
         film_id = cursor.lastrowid
         if film.actors:
-            parts = re.split(r"[;,]", film.actors)
-            names = []
-            for part in parts:
-                name = part.strip()
-                if name:
-                    names.append(name)
-            seen = set()
-            unique_names = []
-            for name in names:
-                if name not in seen:
-                    seen.add(name)
-                    unique_names.append(name)
-            for name in unique_names:
-                exists_cursor = connection.execute(
-                    "SELECT 1 FROM actors WHERE name = ? LIMIT 1",
-                    (name,),
-                )
-                if exists_cursor.fetchone() is None:
-                    connection.execute(
-                        """
-                        INSERT INTO actors (name, other_names, avatar_path)
-                        VALUES (?, ?, ?)
-                        """,
-                        (name, None, None),
-                    )
+            ensure_actors_exist(connection, film.actors)
         connection.commit()
     finally:
         connection.close()
@@ -150,8 +158,10 @@ def update_film(film_id: int, film: FilmUpdate) -> Film:
 
         fields = []
         params: List[object] = []
+        update_data = film.dict(exclude_unset=True)
+        actors_value = update_data.get("actors")
 
-        for field_name, value in film.dict(exclude_unset=True).items():
+        for field_name, value in update_data.items():
             fields.append(f"{field_name} = ?")
             params.append(value)
 
@@ -161,6 +171,8 @@ def update_film(film_id: int, film: FilmUpdate) -> Film:
         params.append(film_id)
         sql = f"UPDATE films SET {', '.join(fields)} WHERE id = ?"
         connection.execute(sql, params)
+        if actors_value:
+            ensure_actors_exist(connection, actors_value)
         connection.commit()
     finally:
         connection.close()
@@ -180,4 +192,3 @@ def delete_film(film_id: int) -> None:
             raise HTTPException(status_code=404, detail="未找到该影视条目")
     finally:
         connection.close()
-
