@@ -40,6 +40,30 @@ class Film(FilmBase):
         orm_mode = True
 
 
+class SeriesBase(BaseModel):
+    name: str
+    poster_path: Optional[str] = None
+
+
+class Series(SeriesBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class TagBase(BaseModel):
+    name: str
+    poster_path: Optional[str] = None
+
+
+class Tag(TagBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
 class ActorBase(BaseModel):
     name: str
     other_names: Optional[str] = None

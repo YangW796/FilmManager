@@ -18,23 +18,25 @@ def init_db() -> None:
                 name TEXT NOT NULL,
                 code TEXT,
                 year INTEGER,
-                tags TEXT,
-                series TEXT,
                 actors TEXT,
                 description TEXT,
                 poster_path TEXT,
                 file_path TEXT,
                 rating REAL,
+                series_id INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
-        try:
-            connection.execute(
-                "ALTER TABLE films ADD COLUMN code TEXT"
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS series (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        except sqlite3.OperationalError:
-            pass
+            """
+        )
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS actors (
@@ -43,6 +45,24 @@ def init_db() -> None:
                 other_names TEXT,
                 avatar_path TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS film_tags (
+                film_id INTEGER NOT NULL,
+                tag_id INTEGER NOT NULL,
+                PRIMARY KEY (film_id, tag_id)
             )
             """
         )

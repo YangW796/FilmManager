@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from .database import FRONTEND_DIR, init_db
 from .films import router as films_router
 from .actors import router as actors_router
+from .series import router as series_router
+from .tags import router as tags_router
 
 
 app = FastAPI(title="Local Film Manager")
@@ -26,6 +28,8 @@ def on_startup() -> None:
 
 app.include_router(films_router)
 app.include_router(actors_router)
+app.include_router(series_router)
+app.include_router(tags_router)
 
 
 if FRONTEND_DIR.exists():

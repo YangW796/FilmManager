@@ -55,6 +55,66 @@ def ensure_actors_exist(connection: sqlite3.Connection, actors_text: str) -> Non
             )
 
 
+def normalize_code(code: Optional[str]) -> Optional[str]:
+    if code is None:
+        return None
+    return code.upper()
+
+
+def get_or_create_series_id(connection: sqlite3.Connection, name: Optional[str]) -> Optional[int]:
+    if not name:
+        return None
+    cursor = connection.execute(
+        "SELECT id FROM series WHERE name = ?",
+        (name,),
+    )
+    row = cursor.fetchone()
+    if row is not None:
+        return row[0]
+    cursor = connection.execute(
+        "INSERT INTO series (name) VALUES (?)",
+        (name,),
+    )
+    return cursor.lastrowid
+
+
+def sync_tags_for_film(connection: sqlite3.Connection, film_id: int, tags_text: Optional[str]) -> None:
+    connection.execute(
+        "DELETE FROM film_tags WHERE film_id = ?",
+        (film_id,),
+    )
+    if not tags_text:
+        return
+    parts = re.split(r"[;,]", tags_text)
+    names = []
+    for part in parts:
+        name = part.strip()
+        if name:
+            names.append(name)
+    seen = set()
+    for name in names:
+        if name in seen:
+            continue
+        seen.add(name)
+        cursor = connection.execute(
+            "SELECT id FROM tags WHERE name = ?",
+            (name,),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            cursor = connection.execute(
+                "INSERT INTO tags (name) VALUES (?)",
+                (name,),
+            )
+            tag_id = cursor.lastrowid
+        else:
+            tag_id = row[0]
+        connection.execute(
+            "INSERT OR IGNORE INTO film_tags (film_id, tag_id) VALUES (?, ?)",
+            (film_id, tag_id),
+        )
+
+
 @router.get("/api/films", response_model=List[Film])
 def list_films(
     q: Optional[str] = Query(default=None, description="按名称模糊搜索"),
@@ -67,9 +127,27 @@ def list_films(
     connection = get_connection()
     connection.row_factory = sqlite3.Row
     try:
-        sql = "SELECT id, name, code, year, tags, series, actors, description, poster_path, file_path, rating FROM films"
+        sql = """
+        SELECT
+            f.id,
+            f.name,
+            f.code,
+            f.year,
+            GROUP_CONCAT(DISTINCT t.name) AS tags,
+            s.name AS series_name,
+            f.actors,
+            f.description,
+            f.poster_path,
+            f.file_path,
+            f.rating
+        FROM films f
+        LEFT JOIN series s ON f.series_id = s.id
+        LEFT JOIN film_tags ft ON ft.film_id = f.id
+        LEFT JOIN tags t ON t.id = ft.tag_id
+        """
         conditions = []
         params: List[object] = []
+        join_tags = False
 
         actor_names: Optional[List[str]] = None
         if actor:
@@ -85,8 +163,9 @@ def list_films(
             conditions.append("name LIKE ?")
             params.append(f"%{q}%")
         if code:
+            normalized_code = normalize_code(code)
             conditions.append("code LIKE ?")
-            params.append(f"%{code}%")
+            params.append(f"%{normalized_code}%")
         if actor_names:
             sub_conditions = []
             for name in actor_names:
@@ -97,19 +176,34 @@ def list_films(
             conditions.append("actors LIKE ?")
             params.append(f"%{actor}%")
         if tag:
-            conditions.append("tags LIKE ?")
-            params.append(f"%{tag}%")
+            join_tags = True
+            conditions.append("t.name = ?")
+            params.append(tag)
         if series:
-            conditions.append("series = ?")
+            conditions.append("s.name = ?")
             params.append(series)
 
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
 
+        sql += """
+        GROUP BY
+            f.id,
+            f.name,
+            f.code,
+            f.year,
+            s.name,
+            f.actors,
+            f.description,
+            f.poster_path,
+            f.file_path,
+            f.rating
+        """
+
         if sort_by == "year":
-            sql += " ORDER BY year IS NULL, year DESC, created_at DESC"
+            sql += " ORDER BY f.year IS NULL, f.year DESC, f.created_at DESC"
         else:
-            sql += " ORDER BY created_at DESC"
+            sql += " ORDER BY f.created_at DESC"
 
         cursor = connection.execute(sql, params)
         rows = cursor.fetchall()
@@ -124,7 +218,36 @@ def get_film(film_id: int) -> Film:
     connection.row_factory = sqlite3.Row
     try:
         cursor = connection.execute(
-            "SELECT id, name, code, year, tags, series, actors, description, poster_path, file_path, rating FROM films WHERE id = ?",
+            """
+            SELECT
+                f.id,
+                f.name,
+                f.code,
+                f.year,
+                GROUP_CONCAT(DISTINCT t.name) AS tags,
+                s.name AS series_name,
+                f.actors,
+                f.description,
+                f.poster_path,
+                f.file_path,
+                f.rating
+            FROM films f
+            LEFT JOIN series s ON f.series_id = s.id
+            LEFT JOIN film_tags ft ON ft.film_id = f.id
+            LEFT JOIN tags t ON t.id = ft.tag_id
+            WHERE f.id = ?
+            GROUP BY
+                f.id,
+                f.name,
+                f.code,
+                f.year,
+                s.name,
+                f.actors,
+                f.description,
+                f.poster_path,
+                f.file_path,
+                f.rating
+            """,
             (film_id,),
         )
         row = cursor.fetchone()
@@ -139,17 +262,18 @@ def get_film(film_id: int) -> Film:
 def create_film(film: FilmCreate) -> Film:
     connection = get_connection()
     try:
+        code_value = normalize_code(film.code)
+        series_id = get_or_create_series_id(connection, film.series)
         cursor = connection.execute(
             """
-            INSERT INTO films (name, code, year, tags, series, actors, description, poster_path, file_path, rating)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO films (name, code, year, series_id, actors, description, poster_path, file_path, rating)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 film.name,
-                film.code,
+                code_value,
                 film.year,
-                film.tags,
-                film.series,
+                series_id,
                 film.actors,
                 film.description,
                 film.poster_path,
@@ -160,6 +284,8 @@ def create_film(film: FilmCreate) -> Film:
         film_id = cursor.lastrowid
         if film.actors:
             ensure_actors_exist(connection, film.actors)
+        if film.tags:
+            sync_tags_for_film(connection, film_id, film.tags)
         connection.commit()
     finally:
         connection.close()
@@ -182,6 +308,13 @@ def update_film(film_id: int, film: FilmUpdate) -> Film:
         params: List[object] = []
         update_data = film.dict(exclude_unset=True)
         actors_value = update_data.get("actors")
+        tags_value = update_data.pop("tags", None)
+        series_name = update_data.pop("series", None)
+        if series_name is not None:
+            series_id = get_or_create_series_id(connection, series_name)
+            update_data["series_id"] = series_id
+        if "code" in update_data:
+            update_data["code"] = normalize_code(update_data["code"])
 
         for field_name, value in update_data.items():
             fields.append(f"{field_name} = ?")
@@ -195,6 +328,8 @@ def update_film(film_id: int, film: FilmUpdate) -> Film:
         connection.execute(sql, params)
         if actors_value:
             ensure_actors_exist(connection, actors_value)
+        if "tags" in update_data:
+            sync_tags_for_film(connection, film_id, tags_value)
         connection.commit()
     finally:
         connection.close()
@@ -205,6 +340,10 @@ def update_film(film_id: int, film: FilmUpdate) -> Film:
 def delete_film(film_id: int) -> None:
     connection = get_connection()
     try:
+        connection.execute(
+            "DELETE FROM film_tags WHERE film_id = ?",
+            (film_id,),
+        )
         cursor = connection.execute(
             "DELETE FROM films WHERE id = ?",
             (film_id,),

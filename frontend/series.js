@@ -14,18 +14,12 @@ window.SeriesPage = {
     const loadSeries = async () => {
       loading.value = true
       try {
-        const res = await fetch("/api/films")
+        const res = await fetch("/api/series")
         if (!res.ok) {
           throw new Error("加载失败")
         }
         const data = await res.json()
-        const set = new Set()
-        data.forEach(f => {
-          if (f.series) {
-            set.add(f.series)
-          }
-        })
-        seriesList.value = Array.from(set)
+        seriesList.value = data
       } catch (e) {
         console.error(e)
         ElementPlus.ElMessage.error("加载系列列表失败")
@@ -52,10 +46,10 @@ window.SeriesPage = {
       }
     }
 
-    const openSeriesDetail = async name => {
-      selectedSeries.value = name
+    const openSeriesDetail = async series => {
+      selectedSeries.value = series.name
       view.value = "detail"
-      await loadSeriesFilms(name)
+      await loadSeriesFilms(series.name)
     }
 
     const backToList = () => {
@@ -120,8 +114,8 @@ window.SeriesPage = {
       <div v-if="view === 'list'">
         <el-row :gutter="16">
           <el-col
-            v-for="name in seriesList"
-            :key="name"
+            v-for="series in seriesList"
+            :key="series.id"
             :xs="12"
             :sm="8"
             :md="6"
@@ -131,9 +125,16 @@ window.SeriesPage = {
             <el-card
               shadow="hover"
               style="cursor: pointer"
-              @click="openSeriesDetail(name)"
+              @click="openSeriesDetail(series)"
             >
-              <div class="film-title">{{ name }}</div>
+              <img
+                v-if="series.poster_path"
+                :src="series.poster_path"
+                class="poster"
+                alt=""
+              >
+              <div v-else class="poster"></div>
+              <div class="film-title">{{ series.name }}</div>
             </el-card>
           </el-col>
         </el-row>
@@ -200,4 +201,3 @@ window.SeriesPage = {
     </div>
   `
 }
-
