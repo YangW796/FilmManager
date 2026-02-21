@@ -351,7 +351,7 @@ window.FilmDetailDialog = {
           @keyup.enter="addTagFromInput"
           clearable
         />
-        <el-scrollbar style="max-height: 260px; margin-top: 12px;">
+        <el-scrollbar height="260px" style="margin-top: 12px;">
           <el-empty
             v-if="tagAllTags.length === 0"
             description="暂无标签"
@@ -885,7 +885,7 @@ window.FilmPage = {
           @keyup.enter="addCreateTagFromInput"
           clearable
         />
-        <el-scrollbar style="max-height: 260px; margin-top: 12px;">
+        <el-scrollbar height="260px" style="margin-top: 12px;">
           <el-empty
             v-if="createTagAllTags.length === 0"
             description="暂无标签"
@@ -921,7 +921,7 @@ window.FilmPage = {
           placeholder="输入系列名称，留空查看全部"
           clearable
         />
-        <el-scrollbar style="max-height: 260px; margin-top: 12px;">
+        <el-scrollbar height="260px" style="margin-top: 12px;">
           <el-skeleton v-if="createSeriesLoading" rows="3" animated />
           <el-empty
             v-else-if="createFilteredSeries.length === 0"

@@ -308,6 +308,7 @@ def update_film(film_id: int, film: FilmUpdate) -> Film:
         params: List[object] = []
         update_data = film.dict(exclude_unset=True)
         actors_value = update_data.get("actors")
+        tags_present = "tags" in update_data
         tags_value = update_data.pop("tags", None)
         series_name = update_data.pop("series", None)
         if series_name is not None:
@@ -328,7 +329,7 @@ def update_film(film_id: int, film: FilmUpdate) -> Film:
         connection.execute(sql, params)
         if actors_value:
             ensure_actors_exist(connection, actors_value)
-        if "tags" in update_data:
+        if tags_present:
             sync_tags_for_film(connection, film_id, tags_value)
         connection.commit()
     finally:
