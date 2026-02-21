@@ -71,13 +71,29 @@ def list_films(
         conditions = []
         params: List[object] = []
 
+        actor_names: Optional[List[str]] = None
+        if actor:
+            actor_cursor = connection.execute(
+                "SELECT name FROM actors WHERE name LIKE ? OR other_names LIKE ?",
+                (f"%{actor}%", f"%{actor}%"),
+            )
+            actor_rows = actor_cursor.fetchall()
+            if actor_rows:
+                actor_names = [row[0] for row in actor_rows]
+
         if q:
             conditions.append("name LIKE ?")
             params.append(f"%{q}%")
         if code:
             conditions.append("code LIKE ?")
             params.append(f"%{code}%")
-        if actor:
+        if actor_names:
+            sub_conditions = []
+            for name in actor_names:
+                sub_conditions.append("actors LIKE ?")
+                params.append(f"%{name}%")
+            conditions.append("(" + " OR ".join(sub_conditions) + ")")
+        elif actor:
             conditions.append("actors LIKE ?")
             params.append(f"%{actor}%")
         if tag:

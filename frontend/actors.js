@@ -13,6 +13,12 @@ window.ActorPage = {
     const actorFilms = Vue.ref([])
     const filmsLoading = Vue.ref(false)
 
+    const actorEditMode = Vue.ref(false)
+    const actorForm = Vue.reactive({
+      other_names: "",
+      avatar_path: ""
+    })
+
     const filmDetailVisible = Vue.ref(false)
     const currentFilm = Vue.reactive({
       id: null,
@@ -69,6 +75,9 @@ window.ActorPage = {
 
     const openActorDetail = async actor => {
       selectedActor.value = actor
+      actorEditMode.value = false
+      actorForm.other_names = actor.other_names || ""
+      actorForm.avatar_path = actor.avatar_path || ""
       view.value = "detail"
       await loadActorFilms(actor)
     }
@@ -77,6 +86,92 @@ window.ActorPage = {
       view.value = "list"
       selectedActor.value = null
       actorFilms.value = []
+      actorEditMode.value = false
+      actorForm.other_names = ""
+      actorForm.avatar_path = ""
+    }
+
+    const enableActorEdit = () => {
+      if (!selectedActor.value) {
+        return
+      }
+      actorEditMode.value = true
+      actorForm.other_names = selectedActor.value.other_names || ""
+      actorForm.avatar_path = selectedActor.value.avatar_path || ""
+    }
+
+    const cancelActorEdit = () => {
+      actorEditMode.value = false
+      if (selectedActor.value) {
+        actorForm.other_names = selectedActor.value.other_names || ""
+        actorForm.avatar_path = selectedActor.value.avatar_path || ""
+      } else {
+        actorForm.other_names = ""
+        actorForm.avatar_path = ""
+      }
+    }
+
+    const saveActor = async () => {
+      if (!selectedActor.value) {
+        return
+      }
+      try {
+        const res = await fetch("/api/actors/" + selectedActor.value.id, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            other_names: actorForm.other_names || null,
+            avatar_path: actorForm.avatar_path || null
+          })
+        })
+        if (!res.ok) {
+          throw new Error("保存失败")
+        }
+        const updated = await res.json()
+        selectedActor.value = updated
+        const index = actors.value.findIndex(a => a.id === updated.id)
+        if (index !== -1) {
+          actors.value[index] = updated
+        }
+        actorEditMode.value = false
+        ElementPlus.ElMessage.success("演员信息已保存")
+      } catch (e) {
+        console.error(e)
+        ElementPlus.ElMessage.error("保存演员信息失败")
+      }
+    }
+
+    const deleteActor = async () => {
+      if (!selectedActor.value) {
+        return
+      }
+      try {
+        await ElementPlus.ElMessageBox.confirm(
+          "确定要删除该演员吗？此操作不会删除任何影片，仅删除演员本身。",
+          "提示",
+          {
+            type: "warning"
+          }
+        )
+      } catch {
+        return
+      }
+      try {
+        const res = await fetch("/api/actors/" + selectedActor.value.id, {
+          method: "DELETE"
+        })
+        if (!res.ok) {
+          throw new Error("删除失败")
+        }
+        ElementPlus.ElMessage.success("演员已删除")
+        actors.value = actors.value.filter(a => a.id !== selectedActor.value.id)
+        backToList()
+      } catch (e) {
+        console.error(e)
+        ElementPlus.ElMessage.error("删除演员失败")
+      }
     }
 
     const openFilmDetail = film => {
@@ -111,6 +206,12 @@ window.ActorPage = {
       filmsLoading,
       openActorDetail,
       backToList,
+      actorEditMode,
+      actorForm,
+      enableActorEdit,
+      cancelActorEdit,
+      saveActor,
+      deleteActor,
       filmDetailVisible,
       currentFilm,
       openFilmDetail,
@@ -167,9 +268,6 @@ window.ActorPage = {
           <el-button @click="backToList">返回演员列表</el-button>
           <div v-if="selectedActor">
             <div class="film-title">{{ selectedActor.name }}</div>
-            <div class="film-meta" v-if="selectedActor.other_names">
-              {{ selectedActor.other_names }}
-            </div>
           </div>
         </div>
 
@@ -184,8 +282,40 @@ window.ActorPage = {
               >
               <div v-else class="poster"></div>
               <div class="film-title">{{ selectedActor.name }}</div>
-              <div class="film-meta" v-if="selectedActor.other_names">
+              <div class="film-meta" v-if="!actorEditMode && selectedActor.other_names">
                 {{ selectedActor.other_names }}
+              </div>
+              <div v-if="actorEditMode" style="margin-top: 12px;">
+                <el-form
+                  :model="actorForm"
+                  label-width="80px"
+                >
+                  <el-form-item label="其他名称">
+                    <el-input v-model="actorForm.other_names" />
+                  </el-form-item>
+                  <el-form-item label="头像 URL">
+                    <el-input v-model="actorForm.avatar_path" />
+                  </el-form-item>
+                </el-form>
+              </div>
+              <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <el-button type="primary" size="small" v-if="!actorEditMode" @click.stop="enableActorEdit">编辑演员</el-button>
+                <el-button size="small" v-else @click.stop="cancelActorEdit">取消编辑</el-button>
+                <el-button
+                  type="primary"
+                  size="small"
+                  v-if="actorEditMode"
+                  @click.stop="saveActor"
+                >
+                  保存演员
+                </el-button>
+                <el-button
+                  type="danger"
+                  size="small"
+                  @click.stop="deleteActor"
+                >
+                  删除演员
+                </el-button>
               </div>
             </el-card>
           </el-col>
