@@ -9,8 +9,10 @@ window.SeriesPage = {
     // 系列列表与加载状态
     const seriesList = Vue.ref([])
     const loading = Vue.ref(false)
-    // 当前选中的系列名称及其影片列表
+    // 当前选中的系列信息及其影片列表
+    const selectedSeriesId = Vue.ref(null)
     const selectedSeries = Vue.ref("")
+    const seriesNameEdit = Vue.ref("")
     const seriesFilms = Vue.ref([])
     const filmsLoading = Vue.ref(false)
 
@@ -53,9 +55,56 @@ window.SeriesPage = {
 
     // 打开某个系列的详情视图
     const openSeriesDetail = async series => {
+      selectedSeriesId.value = series.id
       selectedSeries.value = series.name
+      seriesNameEdit.value = series.name
       view.value = "detail"
       await loadSeriesFilms(series.name)
+    }
+
+    // 重命名当前系列
+    const renameSeries = async () => {
+      if (!selectedSeriesId.value) {
+        return
+      }
+      const newName = (seriesNameEdit.value || "").trim()
+      if (!newName) {
+        ElementPlus.ElMessage.warning("系列名称不能为空")
+        seriesNameEdit.value = selectedSeries.value
+        return
+      }
+      if (newName === selectedSeries.value) {
+        return
+      }
+      try {
+        const res = await fetch("/api/series/" + selectedSeriesId.value, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            id: selectedSeriesId.value,
+            name: newName
+          })
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          const message = data && data.detail ? data.detail : "重命名失败"
+          throw new Error(message)
+        }
+        const updated = await res.json()
+        selectedSeries.value = updated.name
+        seriesNameEdit.value = updated.name
+        const index = seriesList.value.findIndex(item => item.id === updated.id)
+        if (index !== -1) {
+          seriesList.value[index] = updated
+        }
+        ElementPlus.ElMessage.success("系列名称已更新")
+      } catch (e) {
+        console.error(e)
+        ElementPlus.ElMessage.error(e.message || "重命名失败")
+        seriesNameEdit.value = selectedSeries.value
+      }
     }
 
     // 删除当前选中的系列，仅清空影片的 series_id，不删除影片
@@ -70,7 +119,7 @@ window.SeriesPage = {
       } catch {
         return
       }
-      const target = seriesList.value.find(item => item.name === selectedSeries.value)
+      const target = seriesList.value.find(item => item.id === selectedSeriesId.value)
       if (!target) {
         ElementPlus.ElMessage.error("未找到该系列")
         return
@@ -94,7 +143,9 @@ window.SeriesPage = {
     // 返回系列列表视图
     const backToList = () => {
       view.value = "list"
+      selectedSeriesId.value = null
       selectedSeries.value = ""
+      seriesNameEdit.value = ""
       seriesFilms.value = []
     }
 
@@ -119,10 +170,25 @@ window.SeriesPage = {
       filmDetailVisible.value = true
     }
 
-    // 影片保存后刷新当前系列影片列表
-    const handleFilmSaved = async () => {
-      if (selectedSeries.value) {
-        await loadSeriesFilms(selectedSeries.value)
+    // 影片保存后，根据系列变化即时更新当前系列影片列表
+    const handleFilmSaved = () => {
+      if (!selectedSeries.value || !currentFilm.id) {
+        return
+      }
+      const currentId = currentFilm.id
+      const newSeriesName = currentFilm.series || ""
+      if (!newSeriesName || newSeriesName !== selectedSeries.value) {
+        // 系列被清空或切换到其他系列，从当前列表中移除
+        seriesFilms.value = seriesFilms.value.filter(f => f.id !== currentId)
+      } else {
+        // 仍属于当前系列，更新该影片的展示信息
+        const index = seriesFilms.value.findIndex(f => f.id === currentId)
+        if (index !== -1) {
+          seriesFilms.value[index] = {
+            ...seriesFilms.value[index],
+            ...currentFilm
+          }
+        }
       }
     }
 
@@ -142,10 +208,13 @@ window.SeriesPage = {
       view,
       seriesList,
       loading,
+      selectedSeriesId,
       selectedSeries,
+      seriesNameEdit,
       seriesFilms,
       filmsLoading,
       openSeriesDetail,
+      renameSeries,
       backToList,
       filmDetailVisible,
       currentFilm,
@@ -191,11 +260,16 @@ window.SeriesPage = {
       </div>
 
       <div v-else-if="view === 'detail'">
-        <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 16px;">
+        <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
           <el-button @click="backToList">返回系列列表</el-button>
           <el-button type="danger" @click="deleteSeries">删除当前系列</el-button>
-          <div v-if="selectedSeries">
-            <div class="film-title">{{ selectedSeries }}</div>
+          <div v-if="selectedSeries" style="display: flex; align-items: center; gap: 8px;">
+            <el-input
+              v-model="seriesNameEdit"
+              placeholder="系列名称"
+              style="width: 220px"
+            />
+            <el-button type="primary" @click="renameSeries">保存名称</el-button>
           </div>
         </div>
 

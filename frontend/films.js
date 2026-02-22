@@ -121,6 +121,13 @@ window.FilmDetailDialog = {
       seriesDialogVisible.value = false
     }
 
+    // 清空系列，将当前影片从所属系列中移除
+    const clearSeries = () => {
+      props.film.series = null
+      seriesSearch.value = ""
+      seriesDialogVisible.value = false
+    }
+
     // 打开标签选择弹窗，合并已有标签与外部传入的标签选项
     const openTagDialog = () => {
       if (!editMode.value) {
@@ -251,6 +258,7 @@ window.FilmDetailDialog = {
       openSeriesDialog,
       pickSeries,
       confirmSeries,
+      clearSeries,
       openTagDialog,
       addTagFromInput,
       confirmTags,
@@ -358,6 +366,7 @@ window.FilmDetailDialog = {
         <template #footer>
           <span class="dialog-footer">
             <el-button @click="seriesDialogVisible = false">取消</el-button>
+            <el-button @click="clearSeries">清空系列</el-button>
             <el-button type="primary" @click="confirmSeries">使用当前输入</el-button>
           </span>
         </template>
@@ -593,6 +602,13 @@ window.FilmPage = {
       }
     }
 
+    // 在编辑 / 删除影片后刷新列表，但保留当前页码
+    const reloadFilmsKeepPage = async () => {
+      const page = currentPage.value
+      await loadFilms()
+      currentPage.value = page
+    }
+
     // 打开某个影片的详情弹窗
     const openDetail = film => {
       Object.assign(currentFilm, film)
@@ -777,6 +793,7 @@ window.FilmPage = {
       tagOptions,
       pagedFilms,
       loadFilms,
+      reloadFilmsKeepPage,
       openDetail,
       enableEdit,
       saveCurrentFilm,
@@ -895,8 +912,8 @@ window.FilmPage = {
         v-model="detailVisible"
         :film="currentFilm"
         :tag-options="tagOptions"
-        @saved="loadFilms"
-        @deleted="loadFilms"
+        @saved="reloadFilmsKeepPage"
+        @deleted="reloadFilmsKeepPage"
       />
 
       <el-dialog

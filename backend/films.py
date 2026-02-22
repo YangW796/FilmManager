@@ -310,10 +310,14 @@ def update_film(film_id: int, film: FilmUpdate) -> Film:
         actors_value = update_data.get("actors")
         tags_present = "tags" in update_data
         tags_value = update_data.pop("tags", None)
+        series_present = "series" in update_data
         series_name = update_data.pop("series", None)
-        if series_name is not None:
-            series_id = get_or_create_series_id(connection, series_name)
-            update_data["series_id"] = series_id
+        if series_present:
+            if series_name is None or series_name == "":
+                update_data["series_id"] = None
+            else:
+                series_id = get_or_create_series_id(connection, series_name)
+                update_data["series_id"] = series_id
         if "code" in update_data:
             update_data["code"] = normalize_code(update_data["code"])
 
