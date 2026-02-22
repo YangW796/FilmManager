@@ -276,56 +276,98 @@ window.FilmDetailDialog = {
         width="640px"
         @close="close"
       >
+        <div
+          v-if="film.poster_path"
+          style="margin-bottom: 16px; text-align: center;"
+        >
+          <img
+            :src="film.poster_path"
+            alt=""
+            style="max-width: 100%; height: auto;"
+          >
+        </div>
         <el-form
           :model="film"
           label-width="80px"
         >
-          <el-form-item label="编号">
-            <el-input v-model="film.code" :disabled="!editMode" />
-          </el-form-item>
-          <el-form-item label="名称">
-            <el-input v-model="film.name" :disabled="!editMode" />
-          </el-form-item>
-          <el-form-item label="年份">
-            <el-input v-model.number="film.year" :disabled="!editMode" />
-          </el-form-item>
-          <el-form-item label="演员">
-            <el-input v-model="film.actors" :disabled="!editMode" />
-          </el-form-item>
-          <el-form-item label="标签">
-            <el-input
-              v-model="film.tags"
-              :disabled="!editMode"
-              readonly
-              placeholder="点击选择标签"
-              @click="editMode && openTagDialog()"
-            />
-          </el-form-item>
-          <el-form-item label="系列">
-            <el-input
-              v-model="film.series"
-              :disabled="!editMode"
-              readonly
-              @click="openSeriesDialog"
-            />
-          </el-form-item>
-          <el-form-item label="评分">
-            <el-input v-model.number="film.rating" :disabled="!editMode" />
-          </el-form-item>
-          <el-form-item label="文件路径">
-            <el-input v-model="film.file_path" :disabled="!editMode" />
-          </el-form-item>
-          <el-form-item label="海报路径">
-            <el-input v-model="film.poster_path" :disabled="!editMode" />
-          </el-form-item>
-          <el-form-item label="简介">
-            <el-input
-              type="textarea"
-              :rows="4"
-              v-model="film.description"
-              :disabled="!editMode"
-            />
-          </el-form-item>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="编号">
+                <el-input v-model="film.code" :disabled="!editMode" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="名称">
+                <el-input v-model="film.name" :disabled="!editMode" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="年份">
+                <el-input v-model.number="film.year" :disabled="!editMode" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="评分">
+                <el-input v-model.number="film.rating" :disabled="!editMode" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="演员">
+                <el-input v-model="film.actors" :disabled="!editMode" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="系列">
+                <el-input
+                  v-model="film.series"
+                  :disabled="!editMode"
+                  readonly
+                  @click="openSeriesDialog"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="标签">
+                <el-input
+                  v-model="film.tags"
+                  :disabled="!editMode"
+                  readonly
+                  placeholder="点击选择标签"
+                  @click="editMode && openTagDialog()"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="文件路径">
+                <el-input v-model="film.file_path" :disabled="!editMode" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="24">
+              <el-form-item label="海报路径">
+                <el-input v-model="film.poster_path" :disabled="!editMode" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="24">
+              <el-form-item label="简介">
+                <el-input
+                  type="textarea"
+                  :rows="4"
+                  v-model="film.description"
+                  :disabled="!editMode"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
         <template #footer>
           <span class="dialog-footer">

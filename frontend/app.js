@@ -24,12 +24,12 @@ const App = {
     }
   },
   template: `
-    <div>
-      <div style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+    <div style="display: flex; height: 100vh;">
+      <div style="width: 160px; border-right: 1px solid #ebeef5;">
         <el-menu
-          mode="horizontal"
           :default-active="currentPage"
           @select="handleSelect"
+          style="height: 100%; border-right: none;"
         >
           <el-menu-item index="films">影片</el-menu-item>
           <el-menu-item index="actors">演员</el-menu-item>
@@ -37,7 +37,7 @@ const App = {
           <el-menu-item index="tags">标签</el-menu-item>
         </el-menu>
       </div>
-      <div style="padding-top: 56px;">
+      <div style="flex: 1; overflow: auto; padding: 16px;">
         <FilmPage v-if="currentPage === 'films'" />
         <ActorPage v-else-if="currentPage === 'actors'" />
         <SeriesPage v-else-if="currentPage === 'series'" />
