@@ -1,3 +1,4 @@
+// 将标签字符串拆分为去重后的标签名称数组
 function parseTagsText(text) {
   if (!text) {
     return []
@@ -15,6 +16,8 @@ function parseTagsText(text) {
   return result
 }
 
+// 影片详情弹窗组件，支持编辑基础信息、系列与标签
+// 在主页、演员页、系列页复用
 window.FilmDetailDialog = {
   name: "FilmDetailDialog",
   props: {
@@ -33,17 +36,21 @@ window.FilmDetailDialog = {
   },
   emits: ["update:modelValue", "saved", "deleted"],
   setup(props, { emit }) {
+    // 是否处于可编辑模式
     const editMode = Vue.ref(false)
+    // 系列选择弹窗相关状态
     const seriesDialogVisible = Vue.ref(false)
     const seriesSearch = Vue.ref("")
     const seriesOptions = Vue.ref([])
     const seriesLoading = Vue.ref(false)
 
+    // 标签选择弹窗相关状态
     const tagDialogVisible = Vue.ref(false)
     const tagSearch = Vue.ref("")
     const tagAllTags = Vue.ref([])
     const tagSelected = Vue.ref([])
 
+    // 系列搜索过滤
     const filteredSeries = Vue.computed(() => {
       const keyword = seriesSearch.value.trim().toLowerCase()
       if (!keyword) {
@@ -54,6 +61,7 @@ window.FilmDetailDialog = {
       )
     })
 
+    // 标签搜索过滤
     const filteredTags = Vue.computed(() => {
       const keyword = tagSearch.value.trim().toLowerCase()
       const source = tagAllTags.value
@@ -65,6 +73,7 @@ window.FilmDetailDialog = {
       )
     })
 
+    // 懒加载系列选项，只在第一次打开弹窗时请求
     const loadSeriesOptions = async () => {
       if (seriesOptions.value.length > 0) {
         return
@@ -85,6 +94,7 @@ window.FilmDetailDialog = {
       }
     }
 
+    // 打开系列选择弹窗，将当前系列填入搜索框
     const openSeriesDialog = async () => {
       if (!editMode.value) {
         return
@@ -94,11 +104,13 @@ window.FilmDetailDialog = {
       seriesDialogVisible.value = true
     }
 
+    // 直接选择某个系列
     const pickSeries = name => {
       props.film.series = name
       seriesDialogVisible.value = false
     }
 
+    // 使用当前输入的系列名称（可创建新系列）
     const confirmSeries = () => {
       const value = seriesSearch.value.trim()
       const finalValue = value || null
@@ -109,6 +121,7 @@ window.FilmDetailDialog = {
       seriesDialogVisible.value = false
     }
 
+    // 打开标签选择弹窗，合并已有标签与外部传入的标签选项
     const openTagDialog = () => {
       if (!editMode.value) {
         return
@@ -137,6 +150,7 @@ window.FilmDetailDialog = {
       tagDialogVisible.value = true
     }
 
+    // 在输入框中直接新增一个标签并选中
     const addTagFromInput = () => {
       const value = tagSearch.value.trim()
       if (!value) {
@@ -151,21 +165,25 @@ window.FilmDetailDialog = {
       tagSearch.value = ""
     }
 
+    // 确认标签选择，将选中的标签写回 film.tags 文本
     const confirmTags = () => {
       const names = tagSelected.value
       props.film.tags = names.join("; ")
       tagDialogVisible.value = false
     }
 
+    // 关闭详情弹窗并退出编辑模式
     const close = () => {
       emit("update:modelValue", false)
       editMode.value = false
     }
 
+    // 进入编辑模式
     const enableEdit = () => {
       editMode.value = true
     }
 
+    // 保存当前影片（详情弹窗里的保存，仅更新当前条目）
     const save = async () => {
       if (!props.film.id) {
         return
@@ -190,6 +208,7 @@ window.FilmDetailDialog = {
       }
     }
 
+    // 删除当前影片
     const remove = async () => {
       if (!props.film.id) {
         return
@@ -390,10 +409,13 @@ window.FilmPage = {
     FilmDetailDialog: window.FilmDetailDialog
   },
   setup() {
+    // 影片列表与加载状态
     const films = Vue.ref([])
     const loading = Vue.ref(false)
+    // 分页相关状态
     const currentPage = Vue.ref(1)
     const pageSize = Vue.ref(12)
+    // 查询与筛选条件
     const searchName = Vue.ref("")
     const searchCode = Vue.ref("")
     const searchActor = Vue.ref("")
@@ -402,6 +424,7 @@ window.FilmPage = {
 
     const detailVisible = Vue.ref(false)
     const editMode = Vue.ref(false)
+    // 当前选中的影片信息（用于右侧详情弹窗）
     const currentFilm = Vue.reactive({
       id: null,
       code: "",
@@ -417,6 +440,7 @@ window.FilmPage = {
     })
 
     const createVisible = Vue.ref(false)
+    // 创建影片表单数据
     const createForm = Vue.reactive({
       code: "",
       name: "",
@@ -435,6 +459,7 @@ window.FilmPage = {
     const createSeriesOptions = Vue.ref([])
     const createSeriesLoading = Vue.ref(false)
 
+    // 创建对话框中，系列列表的过滤结果
     const createFilteredSeries = Vue.computed(() => {
       const keyword = createSeriesSearch.value.trim().toLowerCase()
       if (!keyword) {
@@ -445,6 +470,7 @@ window.FilmPage = {
       )
     })
 
+    // 根据所有影片的 tags 字段，汇总生成全局标签选项
     const tagOptions = Vue.computed(() => {
       const set = new Set()
       films.value.forEach(f => {
@@ -460,17 +486,20 @@ window.FilmPage = {
       return Array.from(set)
     })
 
+    // 根据当前页和每页数量，对 films 做简单前端分页
     const pagedFilms = Vue.computed(() => {
       const start = (currentPage.value - 1) * pageSize.value
       const end = start + pageSize.value
       return films.value.slice(start, end)
     })
 
+    // 创建影片时使用的标签选择弹窗相关状态
     const createTagDialogVisible = Vue.ref(false)
     const createTagSearch = Vue.ref("")
     const createTagAllTags = Vue.ref([])
     const createSelectedTags = Vue.ref([])
 
+    // 创建对话框中，标签列表的过滤结果
     const createFilteredTags = Vue.computed(() => {
       const keyword = createTagSearch.value.trim().toLowerCase()
       const source = createTagAllTags.value
@@ -482,6 +511,7 @@ window.FilmPage = {
       )
     })
 
+    // 打开“创建影片”中的标签选择弹窗
     const openCreateTagDialog = () => {
       const current = parseTagsText(createForm.tags)
       createSelectedTags.value = current
@@ -507,6 +537,7 @@ window.FilmPage = {
       createTagDialogVisible.value = true
     }
 
+    // 在“创建影片”的标签弹窗中，新建一个标签并选中
     const addCreateTagFromInput = () => {
       const value = createTagSearch.value.trim()
       if (!value) {
@@ -521,12 +552,14 @@ window.FilmPage = {
       createTagSearch.value = ""
     }
 
+    // 确认“创建影片”中的标签选择
     const confirmCreateTags = () => {
       const names = createSelectedTags.value
       createForm.tags = names.join("; ")
       createTagDialogVisible.value = false
     }
 
+    // 根据当前筛选条件从后端加载影片列表
     const loadFilms = async () => {
       loading.value = true
       try {
@@ -560,6 +593,7 @@ window.FilmPage = {
       }
     }
 
+    // 打开某个影片的详情弹窗
     const openDetail = film => {
       Object.assign(currentFilm, film)
       editMode.value = false
@@ -570,6 +604,7 @@ window.FilmPage = {
       editMode.value = true
     }
 
+    // 在主页详情弹窗中保存当前影片，并刷新列表
     const saveCurrentFilm = async () => {
       if (!currentFilm.id) {
         return
@@ -594,6 +629,7 @@ window.FilmPage = {
       }
     }
 
+    // 在主页详情弹窗中删除当前影片，并刷新列表
     const deleteCurrentFilm = async () => {
       if (!currentFilm.id) {
         return
@@ -621,6 +657,7 @@ window.FilmPage = {
       }
     }
 
+    // 打开“添加影视”对话框并重置表单
     const openCreate = () => {
       Object.keys(createForm).forEach(k => {
         createForm[k] = k === "year" || k === "rating" ? null : ""
@@ -628,6 +665,7 @@ window.FilmPage = {
       createVisible.value = true
     }
 
+    // 懒加载“创建影片”对话框中的系列选项
     const loadCreateSeriesOptions = async () => {
       if (createSeriesOptions.value.length > 0) {
         return
@@ -648,17 +686,20 @@ window.FilmPage = {
       }
     }
 
+    // 打开“创建影片”的系列选择弹窗
     const openCreateSeriesDialog = async () => {
       createSeriesSearch.value = createForm.series || ""
       await loadCreateSeriesOptions()
       createSeriesDialogVisible.value = true
     }
 
+    // 在“创建影片”中选择某个系列
     const pickCreateSeries = name => {
       createForm.series = name
       createSeriesDialogVisible.value = false
     }
 
+    // 使用当前输入的系列名称（可创建新系列）
     const confirmCreateSeries = () => {
       const value = createSeriesSearch.value.trim()
       const finalValue = value || ""
@@ -669,6 +710,7 @@ window.FilmPage = {
       createSeriesDialogVisible.value = false
     }
 
+    // 提交“创建影片”表单到后端
     const createFilm = async () => {
       if (!createForm.name) {
         ElementPlus.ElMessage.warning("名称不能为空")
@@ -694,6 +736,7 @@ window.FilmPage = {
       }
     }
 
+    // 预留的标签格式化函数，目前直接返回原始字符串
     const formatTags = film => {
       if (!film.tags) {
         return ""
@@ -701,6 +744,7 @@ window.FilmPage = {
       return film.tags
     }
 
+    // 页面挂载后立即加载影片列表
     Vue.onMounted(() => {
       loadFilms()
     })

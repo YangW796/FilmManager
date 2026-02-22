@@ -4,13 +4,17 @@ window.SeriesPage = {
     FilmDetailDialog: window.FilmDetailDialog
   },
   setup() {
+    // 当前视图：系列列表 / 单个系列详情
     const view = Vue.ref("list")
+    // 系列列表与加载状态
     const seriesList = Vue.ref([])
     const loading = Vue.ref(false)
+    // 当前选中的系列名称及其影片列表
     const selectedSeries = Vue.ref("")
     const seriesFilms = Vue.ref([])
     const filmsLoading = Vue.ref(false)
 
+    // 从后端加载所有系列
     const loadSeries = async () => {
       loading.value = true
       try {
@@ -28,6 +32,7 @@ window.SeriesPage = {
       }
     }
 
+    // 加载某个系列下的所有影片
     const loadSeriesFilms = async name => {
       filmsLoading.value = true
       try {
@@ -46,12 +51,14 @@ window.SeriesPage = {
       }
     }
 
+    // 打开某个系列的详情视图
     const openSeriesDetail = async series => {
       selectedSeries.value = series.name
       view.value = "detail"
       await loadSeriesFilms(series.name)
     }
 
+    // 删除当前选中的系列，仅清空影片的 series_id，不删除影片
     const deleteSeries = async () => {
       if (!selectedSeries.value) {
         return
@@ -84,12 +91,14 @@ window.SeriesPage = {
       }
     }
 
+    // 返回系列列表视图
     const backToList = () => {
       view.value = "list"
       selectedSeries.value = ""
       seriesFilms.value = []
     }
 
+    // 系列详情页中的影片详情弹窗状态
     const filmDetailVisible = Vue.ref(false)
     const currentFilm = Vue.reactive({
       id: null,
@@ -104,23 +113,27 @@ window.SeriesPage = {
       rating: null
     })
 
+    // 打开某个影片的详情弹窗
     const openFilmDetail = film => {
       Object.assign(currentFilm, film)
       filmDetailVisible.value = true
     }
 
+    // 影片保存后刷新当前系列影片列表
     const handleFilmSaved = async () => {
       if (selectedSeries.value) {
         await loadSeriesFilms(selectedSeries.value)
       }
     }
 
+    // 影片删除后刷新当前系列影片列表
     const handleFilmDeleted = async () => {
       if (selectedSeries.value) {
         await loadSeriesFilms(selectedSeries.value)
       }
     }
 
+    // 页面挂载后加载系列列表
     Vue.onMounted(() => {
       loadSeries()
     })

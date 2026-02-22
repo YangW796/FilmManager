@@ -2,11 +2,13 @@
 <html lang="zh-CN">
 
 <head>
+  <!-- 基础页面配置与 Element Plus 样式 -->
   <meta charset="UTF-8">
   <title>本地影视管理</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
   <style>
+    /* 全局基础样式与卡片通用样式 */
     body {
       margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -44,8 +46,10 @@
 </head>
 
 <body>
+  <!-- Vue 应用挂载点 -->
   <div id="app"></div>
 
+  <!-- 通过 CDN 引入 Vue 与 Element Plus，然后按模块顺序加载前端脚本 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   <script src="https://unpkg.com/element-plus"></script>
   <script src="/frontend/films.js"></script>

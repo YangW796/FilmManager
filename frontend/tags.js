@@ -1,9 +1,11 @@
 window.TagPage = {
   name: "TagPage",
   setup() {
+    // 标签列表与加载状态
     const tags = Vue.ref([])
     const loading = Vue.ref(false)
 
+    // 从后端加载所有标签
     const loadTags = async () => {
       loading.value = true
       try {
@@ -20,6 +22,7 @@ window.TagPage = {
       }
     }
 
+    // 重命名标签，会校验非空并处理后端重复名错误信息
     const renameTag = async tag => {
       try {
         const { value } = await ElementPlus.ElMessageBox.prompt(
@@ -64,6 +67,7 @@ window.TagPage = {
       }
     }
 
+    // 删除标签，后端会同时清理与影片的关联
     const deleteTag = async tag => {
       try {
         await ElementPlus.ElMessageBox.confirm(
@@ -93,6 +97,7 @@ window.TagPage = {
       }
     }
 
+    // 页面挂载后加载标签列表
     Vue.onMounted(() => {
       loadTags()
     })
@@ -161,4 +166,3 @@ window.TagPage = {
     </div>
   `
 }
-

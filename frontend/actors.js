@@ -4,15 +4,19 @@ window.ActorPage = {
     FilmDetailDialog: window.FilmDetailDialog
   },
   setup() {
+    // 演员列表与加载状态
     const actors = Vue.ref([])
     const loading = Vue.ref(false)
     const searchName = Vue.ref("")
 
+    // 当前视图：list（列表）或 detail（详情）
     const view = Vue.ref("list")
+    // 当前选中的演员及其相关影片
     const selectedActor = Vue.ref(null)
     const actorFilms = Vue.ref([])
     const filmsLoading = Vue.ref(false)
 
+    // 演员编辑表单与编辑状态
     const actorEditMode = Vue.ref(false)
     const actorForm = Vue.reactive({
       other_names: "",
@@ -20,6 +24,7 @@ window.ActorPage = {
       level: null
     })
 
+    // 等级数值到展示名称的映射
     const levelNames = {
       1: "夯",
       2: "顶级",
@@ -28,6 +33,7 @@ window.ActorPage = {
       5: "拉完了"
     }
 
+    // 按等级将演员分桶，level 为 null 或异常值归到 unset
     const levelBuckets = Vue.computed(() => {
       const buckets = {
         unset: [],
@@ -48,8 +54,10 @@ window.ActorPage = {
       return buckets
     })
 
+    // 影片标签选项，用于复用 FilmDetailDialog 的标签弹窗
     const tagOptions = Vue.ref([])
 
+    // 从后端加载标签列表
     const loadTagOptions = async () => {
       try {
         const res = await fetch("/api/tags")
@@ -64,6 +72,7 @@ window.ActorPage = {
       }
     }
 
+    // 演员详情页中的影片详情弹窗状态
     const filmDetailVisible = Vue.ref(false)
     const currentFilm = Vue.reactive({
       id: null,
@@ -78,6 +87,7 @@ window.ActorPage = {
       rating: null
     })
 
+    // 从后端加载演员列表，可按名称模糊搜索
     const loadActors = async () => {
       loading.value = true
       try {
@@ -98,6 +108,7 @@ window.ActorPage = {
       }
     }
 
+    // 加载某个演员参与的影片列表
     const loadActorFilms = async actor => {
       filmsLoading.value = true
       try {
@@ -118,6 +129,7 @@ window.ActorPage = {
       }
     }
 
+    // 打开演员详情视图并加载其相关影片
     const openActorDetail = async actor => {
       selectedActor.value = actor
       actorEditMode.value = false
@@ -128,6 +140,7 @@ window.ActorPage = {
       await loadActorFilms(actor)
     }
 
+    // 返回演员列表视图并重置详情状态
     const backToList = () => {
       view.value = "list"
       selectedActor.value = null
@@ -138,6 +151,7 @@ window.ActorPage = {
       actorForm.level = null
     }
 
+    // 进入演员信息编辑模式
     const enableActorEdit = () => {
       if (!selectedActor.value) {
         return
@@ -148,6 +162,7 @@ window.ActorPage = {
       actorForm.level = selectedActor.value.level || null
     }
 
+    // 取消编辑，恢复为当前选中演员的信息
     const cancelActorEdit = () => {
       actorEditMode.value = false
       if (selectedActor.value) {
@@ -161,6 +176,7 @@ window.ActorPage = {
       }
     }
 
+    // 保存演员信息（别名 / 头像 / 等级）
     const saveActor = async () => {
       if (!selectedActor.value) {
         return
@@ -194,6 +210,7 @@ window.ActorPage = {
       }
     }
 
+    // 删除当前选中的演员（不会删除任何影片）
     const deleteActor = async () => {
       if (!selectedActor.value) {
         return
@@ -225,23 +242,27 @@ window.ActorPage = {
       }
     }
 
+    // 打开演员详情页中某个影片的详情弹窗
     const openFilmDetail = film => {
       Object.assign(currentFilm, film)
       filmDetailVisible.value = true
     }
 
+    // 影片保存后，刷新当前演员的影片列表
     const handleFilmSaved = async () => {
       if (selectedActor.value) {
         await loadActorFilms(selectedActor.value)
       }
     }
 
+    // 影片删除后，刷新当前演员的影片列表
     const handleFilmDeleted = async () => {
       if (selectedActor.value) {
         await loadActorFilms(selectedActor.value)
       }
     }
 
+    // 页面挂载后加载演员列表和全局标签列表
     Vue.onMounted(() => {
       loadActors()
       loadTagOptions()

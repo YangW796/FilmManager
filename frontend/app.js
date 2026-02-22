@@ -3,14 +3,17 @@ const { createApp, ref } = Vue
 const App = {
   name: "RootApp",
   components: {
+    // 四个主页面组件，通过顶部菜单进行切换
     FilmPage: window.FilmPage,
     ActorPage: window.ActorPage,
     SeriesPage: window.SeriesPage,
     TagPage: window.TagPage
   },
   setup() {
+    // 当前激活的菜单 key，对应具体页面
     const currentPage = ref("films")
 
+    // 顶部菜单切换时更新当前页面
     const handleSelect = key => {
       currentPage.value = key
     }
