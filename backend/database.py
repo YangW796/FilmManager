@@ -66,6 +66,12 @@ def init_db() -> None:
             )
             """
         )
+        try:
+            connection.execute(
+                "ALTER TABLE actors ADD COLUMN level INTEGER"
+            )
+        except sqlite3.OperationalError:
+            pass
         connection.commit()
     finally:
         connection.close()

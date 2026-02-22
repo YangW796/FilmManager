@@ -68,6 +68,7 @@ class ActorBase(BaseModel):
     name: str
     other_names: Optional[str] = None
     avatar_path: Optional[str] = None
+    level: Optional[int] = None
 
 
 class ActorCreate(ActorBase):
@@ -78,6 +79,7 @@ class ActorUpdate(BaseModel):
     name: Optional[str] = None
     other_names: Optional[str] = None
     avatar_path: Optional[str] = None
+    level: Optional[int] = None
 
 
 class Actor(ActorBase):

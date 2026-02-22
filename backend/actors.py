@@ -16,6 +16,7 @@ def row_to_actor(row: sqlite3.Row) -> Actor:
         name=row[1],
         other_names=row[2],
         avatar_path=row[3],
+        level=row[4],
     )
 
 
@@ -26,7 +27,7 @@ def list_actors(
     connection = get_connection()
     connection.row_factory = sqlite3.Row
     try:
-        sql = "SELECT id, name, other_names, avatar_path FROM actors"
+        sql = "SELECT id, name, other_names, avatar_path, level FROM actors"
         params: List[object] = []
         if q:
             sql += " WHERE name LIKE ? OR other_names LIKE ?"
@@ -46,13 +47,14 @@ def create_actor(actor: ActorCreate) -> Actor:
     try:
         cursor = connection.execute(
             """
-            INSERT INTO actors (name, other_names, avatar_path)
-            VALUES (?, ?, ?)
+            INSERT INTO actors (name, other_names, avatar_path, level)
+            VALUES (?, ?, ?, ?)
             """,
             (
                 actor.name,
                 actor.other_names,
                 actor.avatar_path,
+                actor.level,
             ),
         )
         connection.commit()
@@ -68,7 +70,7 @@ def get_actor(actor_id: int) -> Actor:
     connection.row_factory = sqlite3.Row
     try:
         cursor = connection.execute(
-            "SELECT id, name, other_names, avatar_path FROM actors WHERE id = ?",
+            "SELECT id, name, other_names, avatar_path, level FROM actors WHERE id = ?",
             (actor_id,),
         )
         row = cursor.fetchone()
@@ -123,4 +125,3 @@ def delete_actor(actor_id: int) -> None:
             raise HTTPException(status_code=404, detail="未找到该演员")
     finally:
         connection.close()
-

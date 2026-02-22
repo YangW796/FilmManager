@@ -16,8 +16,53 @@ window.ActorPage = {
     const actorEditMode = Vue.ref(false)
     const actorForm = Vue.reactive({
       other_names: "",
-      avatar_path: ""
+      avatar_path: "",
+      level: null
     })
+
+    const levelNames = {
+      1: "夯",
+      2: "顶级",
+      3: "人上人",
+      4: "NPC",
+      5: "拉完了"
+    }
+
+    const levelBuckets = Vue.computed(() => {
+      const buckets = {
+        unset: [],
+        1: [],
+        2: [],
+        3: [],
+        4: [],
+        5: []
+      }
+      actors.value.forEach(actor => {
+        const level = actor.level
+        if (!level || level < 1 || level > 5) {
+          buckets.unset.push(actor)
+        } else {
+          buckets[level].push(actor)
+        }
+      })
+      return buckets
+    })
+
+    const tagOptions = Vue.ref([])
+
+    const loadTagOptions = async () => {
+      try {
+        const res = await fetch("/api/tags")
+        if (!res.ok) {
+          throw new Error("加载失败")
+        }
+        const data = await res.json()
+        tagOptions.value = data.map(t => t.name)
+      } catch (e) {
+        console.error(e)
+        ElementPlus.ElMessage.error("加载标签列表失败")
+      }
+    }
 
     const filmDetailVisible = Vue.ref(false)
     const currentFilm = Vue.reactive({
@@ -78,6 +123,7 @@ window.ActorPage = {
       actorEditMode.value = false
       actorForm.other_names = actor.other_names || ""
       actorForm.avatar_path = actor.avatar_path || ""
+      actorForm.level = actor.level || null
       view.value = "detail"
       await loadActorFilms(actor)
     }
@@ -89,6 +135,7 @@ window.ActorPage = {
       actorEditMode.value = false
       actorForm.other_names = ""
       actorForm.avatar_path = ""
+      actorForm.level = null
     }
 
     const enableActorEdit = () => {
@@ -98,6 +145,7 @@ window.ActorPage = {
       actorEditMode.value = true
       actorForm.other_names = selectedActor.value.other_names || ""
       actorForm.avatar_path = selectedActor.value.avatar_path || ""
+      actorForm.level = selectedActor.value.level || null
     }
 
     const cancelActorEdit = () => {
@@ -105,9 +153,11 @@ window.ActorPage = {
       if (selectedActor.value) {
         actorForm.other_names = selectedActor.value.other_names || ""
         actorForm.avatar_path = selectedActor.value.avatar_path || ""
+        actorForm.level = selectedActor.value.level || null
       } else {
         actorForm.other_names = ""
         actorForm.avatar_path = ""
+        actorForm.level = null
       }
     }
 
@@ -123,7 +173,8 @@ window.ActorPage = {
           },
           body: JSON.stringify({
             other_names: actorForm.other_names || null,
-            avatar_path: actorForm.avatar_path || null
+            avatar_path: actorForm.avatar_path || null,
+            level: actorForm.level || null
           })
         })
         if (!res.ok) {
@@ -193,6 +244,7 @@ window.ActorPage = {
 
     Vue.onMounted(() => {
       loadActors()
+      loadTagOptions()
     })
 
     return {
@@ -216,7 +268,10 @@ window.ActorPage = {
       currentFilm,
       openFilmDetail,
       handleFilmSaved,
-      handleFilmDeleted
+      handleFilmDeleted,
+      levelNames,
+      levelBuckets,
+      tagOptions
     }
   },
   template: `
@@ -231,34 +286,75 @@ window.ActorPage = {
           />
         </div>
 
-        <el-row :gutter="16">
-          <el-col
-            v-for="actor in actors"
-            :key="actor.id"
-            :xs="12"
-            :sm="8"
-            :md="6"
-            :lg="4"
-            style="margin-bottom: 16px"
-          >
-            <el-card shadow="hover" @click="openActorDetail(actor)" style="cursor: pointer">
-              <img
-                v-if="actor.avatar_path"
-                :src="actor.avatar_path"
-                class="poster"
-                alt=""
-              >
-              <div v-else class="poster"></div>
-              <div class="film-title">{{ actor.name }}</div>
-              <div
-                class="film-meta"
-                v-if="actor.other_names"
-              >
-                {{ actor.other_names }}
-              </div>
-            </el-card>
-          </el-col>
-        </el-row>
+        <div v-for="level in [1, 2, 3, 4, 5]" :key="level" style="margin-bottom: 24px;">
+          <div class="film-title">{{ levelNames[level] }}</div>
+          <el-row :gutter="16" style="margin-top: 8px;">
+            <el-col
+              v-for="actor in levelBuckets[level]"
+              :key="actor.id"
+              :xs="12"
+              :sm="8"
+              :md="6"
+              :lg="4"
+              style="margin-bottom: 16px"
+            >
+              <el-card shadow="hover" @click="openActorDetail(actor)" style="cursor: pointer">
+                <img
+                  v-if="actor.avatar_path"
+                  :src="actor.avatar_path"
+                  class="poster"
+                  alt=""
+                >
+                <div v-else class="poster"></div>
+                <div class="film-title">{{ actor.name }}</div>
+                <div
+                  class="film-meta"
+                  v-if="actor.other_names"
+                >
+                  {{ actor.other_names }}
+                </div>
+                <div
+                  class="film-meta"
+                  v-if="actor.level"
+                >
+                  等级：{{ levelNames[actor.level] || actor.level }}
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+        </div>
+
+        <div v-if="levelBuckets.unset.length" style="margin-bottom: 24px;">
+          <div class="film-title">未设置</div>
+          <el-row :gutter="16" style="margin-top: 8px;">
+            <el-col
+              v-for="actor in levelBuckets.unset"
+              :key="actor.id"
+              :xs="12"
+              :sm="8"
+              :md="6"
+              :lg="4"
+              style="margin-bottom: 16px"
+            >
+              <el-card shadow="hover" @click="openActorDetail(actor)" style="cursor: pointer">
+                <img
+                  v-if="actor.avatar_path"
+                  :src="actor.avatar_path"
+                  class="poster"
+                  alt=""
+                >
+                <div v-else class="poster"></div>
+                <div class="film-title">{{ actor.name }}</div>
+                <div
+                  class="film-meta"
+                  v-if="actor.other_names"
+                >
+                  {{ actor.other_names }}
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+        </div>
 
         <el-empty v-if="!loading && actors.length === 0" description="暂无演员" />
       </div>
@@ -285,6 +381,9 @@ window.ActorPage = {
               <div class="film-meta" v-if="!actorEditMode && selectedActor.other_names">
                 {{ selectedActor.other_names }}
               </div>
+              <div class="film-meta" v-if="!actorEditMode && selectedActor.level">
+                等级：{{ levelNames[selectedActor.level] || selectedActor.level }}
+              </div>
               <div v-if="actorEditMode" style="margin-top: 12px;">
                 <el-form
                   :model="actorForm"
@@ -295,6 +394,16 @@ window.ActorPage = {
                   </el-form-item>
                   <el-form-item label="头像 URL">
                     <el-input v-model="actorForm.avatar_path" />
+                  </el-form-item>
+                  <el-form-item label="等级">
+                    <el-select v-model="actorForm.level" placeholder="选择等级">
+                      <el-option
+                        v-for="level in [1, 2, 3, 4, 5]"
+                        :key="level"
+                        :label="levelNames[level]"
+                        :value="level"
+                      />
+                    </el-select>
                   </el-form-item>
                 </el-form>
               </div>
@@ -361,6 +470,7 @@ window.ActorPage = {
         <FilmDetailDialog
           v-model="filmDetailVisible"
           :film="currentFilm"
+          :tag-options="tagOptions"
           @saved="handleFilmSaved"
           @deleted="handleFilmDeleted"
         />
