@@ -875,7 +875,9 @@ window.FilmPage = {
               alt=""
             >
             <div v-else class="poster"></div>
-            <div class="film-title">{{ film.name }}</div>
+            <div class="film-title">
+              {{ film.code ? film.code + " " + film.name : film.name }}
+            </div>
             <div class="film-meta">
               <span v-if="film.year">{{ film.year }}</span>
               <span v-if="film.rating"> · 评分 {{ film.rating }}</span>
