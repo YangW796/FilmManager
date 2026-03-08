@@ -37,7 +37,7 @@ class Film(FilmBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class SeriesBase(BaseModel):
@@ -49,7 +49,7 @@ class Series(SeriesBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class TagBase(BaseModel):
@@ -61,7 +61,7 @@ class Tag(TagBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ActorBase(BaseModel):
@@ -88,4 +88,4 @@ class Actor(ActorBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
