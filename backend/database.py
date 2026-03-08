@@ -44,10 +44,19 @@ def init_db() -> None:
                 name TEXT NOT NULL,
                 other_names TEXT,
                 avatar_path TEXT,
+                level INTEGER,
+                films_complete INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
+        actor_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(actors)")
+        }
+        if "films_complete" not in actor_columns:
+            connection.execute(
+                "ALTER TABLE actors ADD COLUMN films_complete INTEGER DEFAULT 0"
+            )
         connection.execute(
             """
             CREATE TABLE IF NOT EXISTS tags (

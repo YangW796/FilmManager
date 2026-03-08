@@ -21,7 +21,8 @@ window.ActorPage = {
     const actorForm = Vue.reactive({
       other_names: "",
       avatar_path: "",
-      level: null
+      level: null,
+      films_complete: false
     })
 
     // 等级数值到展示名称的映射
@@ -136,6 +137,7 @@ window.ActorPage = {
       actorForm.other_names = actor.other_names || ""
       actorForm.avatar_path = actor.avatar_path || ""
       actorForm.level = actor.level || null
+      actorForm.films_complete = !!actor.films_complete
       view.value = "detail"
       await loadActorFilms(actor)
     }
@@ -149,6 +151,7 @@ window.ActorPage = {
       actorForm.other_names = ""
       actorForm.avatar_path = ""
       actorForm.level = null
+      actorForm.films_complete = false
     }
 
     // 进入演员信息编辑模式
@@ -160,6 +163,7 @@ window.ActorPage = {
       actorForm.other_names = selectedActor.value.other_names || ""
       actorForm.avatar_path = selectedActor.value.avatar_path || ""
       actorForm.level = selectedActor.value.level || null
+      actorForm.films_complete = !!selectedActor.value.films_complete
     }
 
     // 取消编辑，恢复为当前选中演员的信息
@@ -169,10 +173,12 @@ window.ActorPage = {
         actorForm.other_names = selectedActor.value.other_names || ""
         actorForm.avatar_path = selectedActor.value.avatar_path || ""
         actorForm.level = selectedActor.value.level || null
+        actorForm.films_complete = !!selectedActor.value.films_complete
       } else {
         actorForm.other_names = ""
         actorForm.avatar_path = ""
         actorForm.level = null
+        actorForm.films_complete = false
       }
     }
 
@@ -190,7 +196,8 @@ window.ActorPage = {
           body: JSON.stringify({
             other_names: actorForm.other_names || null,
             avatar_path: actorForm.avatar_path || null,
-            level: actorForm.level || null
+            level: actorForm.level || null,
+            films_complete: actorForm.films_complete
           })
         })
         if (!res.ok) {
@@ -405,6 +412,9 @@ window.ActorPage = {
               <div class="film-meta" v-if="!actorEditMode && selectedActor.level">
                 等级：{{ levelNames[selectedActor.level] || selectedActor.level }}
               </div>
+              <div class="film-meta" v-if="!actorEditMode">
+                影片整理：{{ selectedActor.films_complete ? "已完成" : "未完成" }}
+              </div>
               <div v-if="actorEditMode" style="margin-top: 12px;">
                 <el-form
                   :model="actorForm"
@@ -425,6 +435,9 @@ window.ActorPage = {
                         :value="level"
                       />
                     </el-select>
+                  </el-form-item>
+                  <el-form-item label="影片整理">
+                    <el-switch v-model="actorForm.films_complete" />
                   </el-form-item>
                 </el-form>
               </div>

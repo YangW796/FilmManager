@@ -17,6 +17,7 @@ def row_to_actor(row: sqlite3.Row) -> Actor:
         other_names=row[2],
         avatar_path=row[3],
         level=row[4],
+        films_complete=bool(row[5]),
     )
 
 
@@ -27,7 +28,7 @@ def list_actors(
     connection = get_connection()
     connection.row_factory = sqlite3.Row
     try:
-        sql = "SELECT id, name, other_names, avatar_path, level FROM actors"
+        sql = "SELECT id, name, other_names, avatar_path, level, films_complete FROM actors"
         params: List[object] = []
         if q:
             sql += " WHERE name LIKE ? OR other_names LIKE ?"
@@ -47,14 +48,15 @@ def create_actor(actor: ActorCreate) -> Actor:
     try:
         cursor = connection.execute(
             """
-            INSERT INTO actors (name, other_names, avatar_path, level)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO actors (name, other_names, avatar_path, level, films_complete)
+            VALUES (?, ?, ?, ?, ?)
             """,
             (
                 actor.name,
                 actor.other_names,
                 actor.avatar_path,
                 actor.level,
+                actor.films_complete,
             ),
         )
         connection.commit()
@@ -70,7 +72,7 @@ def get_actor(actor_id: int) -> Actor:
     connection.row_factory = sqlite3.Row
     try:
         cursor = connection.execute(
-            "SELECT id, name, other_names, avatar_path, level FROM actors WHERE id = ?",
+            "SELECT id, name, other_names, avatar_path, level, films_complete FROM actors WHERE id = ?",
             (actor_id,),
         )
         row = cursor.fetchone()

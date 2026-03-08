@@ -389,7 +389,7 @@ window.FilmDetailDialog = {
           placeholder="输入系列名称，留空查看全部"
           clearable
         />
-        <el-scrollbar style="max-height: 260px; margin-top: 12px;">
+        <el-scrollbar height="260px" style="margin-top: 12px;">
           <el-skeleton v-if="seriesLoading" rows="3" animated />
           <el-empty
             v-else-if="filteredSeries.length === 0"

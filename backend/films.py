@@ -48,10 +48,10 @@ def ensure_actors_exist(connection: sqlite3.Connection, actors_text: str) -> Non
         if exists_cursor.fetchone() is None:
             connection.execute(
                 """
-                INSERT INTO actors (name, other_names, avatar_path)
-                VALUES (?, ?, ?)
+                INSERT INTO actors (name, other_names, avatar_path, films_complete)
+                VALUES (?, ?, ?, ?)
                 """,
-                (name, None, None),
+                (name, None, None, 0),
             )
 
 
